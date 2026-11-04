@@ -37,7 +37,7 @@ def test_provider_selection(monkeypatch):
     monkeypatch.setattr(s, "anthropic_api_key", None)
     monkeypatch.setattr(s, "gemini_api_key", "k")
     monkeypatch.setattr(s, "llm_model", None)
-    assert s.provider == "gemini" and s.model == "gemini-2.5-flash"
+    assert s.provider == "gemini" and s.model == "gemini-3.5-flash-lite"
     monkeypatch.setattr(s, "anthropic_api_key", "a")
     assert s.provider == "anthropic" and s.model == "claude-opus-5-5"
 

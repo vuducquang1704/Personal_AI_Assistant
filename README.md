@@ -136,7 +136,7 @@ Lưu ý: ở chế độ Testing, Google cho refresh token sống 7 ngày, hết
 | `LLM_PROVIDER` | auto | `anthropic`, `gemini` hoặc `auto` (Gemini nếu chỉ có `GEMINI_API_KEY`) |
 | `ANTHROPIC_API_KEY` | | Khoá API Claude |
 | `GEMINI_API_KEY` | | Khoá API Gemini (lấy ở aistudio.google.com, có gói miễn phí) |
-| `LLM_MODEL` | (theo nhà cung cấp) | Mặc định `gemini-2.5-flash` hoặc `claude-opus-5-5` |
+| `LLM_MODEL` | (theo nhà cung cấp) | Mặc định `gemini-3.5-flash-lite` hoặc `claude-opus-5-5` |
 | `LLM_EFFORT` | low | Mức suy luận (low/medium/high); low cho phản hồi nhanh |
 | `JWT_SECRET` | | Khoá ký token, bắt buộc đổi khi triển khai |
 | `CORS_ORIGINS` | http://localhost:5173 | Các origin được gọi API |

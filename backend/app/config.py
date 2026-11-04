@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     def model(self) -> str:
         if self.llm_model:
             return self.llm_model
-        return "gemini-2.5-flash" if self.provider == "gemini" else "claude-opus-5-5"
+        return "gemini-3.5-flash-lite" if self.provider == "gemini" else "claude-opus-5-5"
 
 
 @lru_cache
