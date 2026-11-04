@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/ReminderWatcher.tsx","./src/lib/api.ts","./src/lib/auth.tsx","./src/lib/speech.ts","./src/lib/types.ts","./src/pages/Assistant.tsx","./src/pages/AuthPage.tsx","./src/pages/Dashboard.tsx","./src/pages/Settings.tsx","./src/pages/Tasks.tsx","./vite.config.ts"],"version":"5.6.3"}

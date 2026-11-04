@@ -1,0 +1,40 @@
+{"id": 1, "text": "Thêm việc nộp báo cáo đồ án trước 5 giờ chiều thứ Sáu này, ưu tiên cao", "expect": {"tool": "create_task", "title_contains": ["báo cáo"], "priority": "high", "due_at": "2026-11-06T17:00"}}
+{"id": 2, "text": "nhắc mình mua sữa", "expect": {"tool": "create_task", "title_contains": ["sữa"], "priority": "medium", "due_at": null}}
+{"id": 3, "text": "mai 8 giờ sáng họp nhóm đồ án", "expect": {"tool": "create_task", "title_contains": ["họp"], "due_at": "2026-11-05T08:00"}}
+{"id": 4, "text": "ghi lại giúp mình việc đọc chương 3 giáo trình học máy, không gấp đâu", "expect": {"tool": "create_task", "title_contains": ["chương 3"], "priority": "low"}}
+{"id": 5, "text": "tạo task ôn thi cuối kỳ môn mạng máy tính, hạn chủ nhật tuần này", "expect": {"tool": "create_task", "title_contains": ["mạng máy tính"], "due_date": "2026-11-08"}}
+{"id": 6, "text": "Thêm công việc gửi email cho thầy Liêm lúc 3 giờ chiều nay, quan trọng lắm", "expect": {"tool": "create_task", "title_contains": ["email"], "priority": "high", "due_at": "2026-11-04T15:00"}}
+{"id": 7, "text": "thứ sáu tuần sau phải nộp tiền học phí", "expect": {"tool": "create_task", "title_contains": ["học phí"], "due_date": "2026-11-13"}}
+{"id": 8, "text": "cuối tháng này nhớ gia hạn thẻ thư viện", "expect": {"tool": "create_task", "title_contains": ["thư viện"], "due_date": "2026-11-30"}}
+{"id": 9, "text": "thêm việc viết chương 2 báo cáo, hạn 20 tháng 11", "expect": {"tool": "create_task", "title_contains": ["chương 2"], "due_date": "2026-11-20"}}
+{"id": 10, "text": "tối nay 9 giờ gọi điện cho mẹ", "expect": {"tool": "create_task", "title_contains": ["mẹ"], "due_at": "2026-11-04T21:00"}}
+{"id": 11, "text": "2 ngày nữa phải sửa xong giao diện đăng nhập, việc này ưu tiên cao", "expect": {"tool": "create_task", "title_contains": ["đăng nhập"], "priority": "high", "due_date": "2026-11-06"}}
+{"id": 12, "text": "thêm việc dọn phòng", "expect": {"tool": "create_task", "title_contains": ["dọn phòng"], "due_at": null}}
+{"id": 13, "text": "đầu tuần sau 10 giờ sáng có buổi bảo vệ đề cương", "expect": {"tool": "create_task", "title_contains": ["đề cương"], "due_at": "2026-11-09T10:00"}}
+{"id": 14, "text": "Ngày 1 tháng 12 nộp bản thảo đồ án cho giảng viên, mức ưu tiên trung bình", "expect": {"tool": "create_task", "title_contains": ["bản thảo"], "priority": "medium", "due_date": "2026-12-01"}}
+{"id": 15, "text": "hôm nay mình có những việc gì", "seed": [{"title": "Họp nhóm", "due_at": "2026-11-04T14:00"}, {"title": "Đi chợ", "due_at": "2026-11-06T18:00"}], "expect": {"tool": "list_tasks", "reply_contains": ["Họp nhóm"], "reply_not_contains": ["Đi chợ"]}}
+{"id": 16, "text": "liệt kê các việc ưu tiên cao của mình", "seed": [{"title": "Nộp báo cáo", "priority": "high"}, {"title": "Tưới cây", "priority": "low"}], "expect": {"tool": "list_tasks", "reply_contains": ["báo cáo"], "reply_not_contains": ["Tưới cây"]}}
+{"id": 17, "text": "có việc nào bị quá hạn không", "seed": [{"title": "Trả sách thư viện", "due_at": "2026-11-01T17:00"}, {"title": "Viết blog", "due_at": "2026-11-10T17:00"}], "expect": {"tool": "list_tasks", "reply_contains": ["sách"], "reply_not_contains": ["blog"]}}
+{"id": 18, "text": "tuần này mình phải làm những gì", "seed": [{"title": "Nộp bài tập lớn", "due_at": "2026-11-07T23:59"}, {"title": "Thi giữa kỳ", "due_at": "2026-11-25T08:00"}], "expect": {"tool": "list_tasks", "reply_contains": ["bài tập lớn"], "reply_not_contains": ["giữa kỳ"]}}
+{"id": 19, "text": "việc họp nhóm hạn lúc mấy giờ", "seed": [{"title": "Họp nhóm đồ án", "due_at": "2026-11-05T15:30"}], "expect": {"tool": "list_tasks", "reply_contains": ["15", "3 giờ"], "reply_any": true}}
+{"id": 20, "text": "mình còn bao nhiêu việc chưa làm", "seed": [{"title": "A"}, {"title": "B"}, {"title": "C", "status": "done"}], "expect": {"tool_any": ["list_tasks", "get_statistics"], "reply_contains": ["2", "hai"], "reply_any": true}}
+{"id": 21, "text": "đánh dấu việc nộp báo cáo là đã xong", "seed": [{"title": "Nộp báo cáo tuần"}, {"title": "Đi siêu thị"}], "expect": {"tool": "update_task", "target": "Nộp báo cáo tuần", "status": "done"}}
+{"id": 22, "text": "mình làm xong việc đi siêu thị rồi", "seed": [{"title": "Nộp báo cáo tuần"}, {"title": "Đi siêu thị"}], "expect": {"tool": "update_task", "target": "Đi siêu thị", "status": "done"}}
+{"id": 23, "text": "dời hạn việc họp nhóm sang 4 giờ chiều mai", "seed": [{"title": "Họp nhóm", "due_at": "2026-11-04T14:00"}], "expect": {"tool": "update_task", "target": "Họp nhóm", "due_at": "2026-11-05T16:00"}}
+{"id": 24, "text": "chuyển việc tưới cây lên ưu tiên cao", "seed": [{"title": "Tưới cây", "priority": "low"}], "expect": {"tool": "update_task", "target": "Tưới cây", "priority": "high"}}
+{"id": 25, "text": "mình đang làm việc viết chương 1 rồi nhé", "seed": [{"title": "Viết chương 1"}], "expect": {"tool": "update_task", "target": "Viết chương 1", "status": "in_progress"}}
+{"id": 26, "text": "đổi tên việc mua sữa thành mua sữa và bánh mì", "seed": [{"title": "Mua sữa"}], "expect": {"tool": "update_task", "target": "Mua sữa", "title_contains": ["bánh mì"]}}
+{"id": 27, "text": "xoá việc đi chợ đi", "seed": [{"title": "Đi chợ"}, {"title": "Học bài"}], "expect": {"tool": "delete_task", "target": "Đi chợ"}}
+{"id": 28, "text": "bỏ cái việc dọn phòng ra khỏi danh sách", "seed": [{"title": "Dọn phòng"}], "expect": {"tool": "delete_task", "target": "Dọn phòng"}}
+{"id": 29, "text": "nhắc mình gọi điện cho thầy lúc 9 giờ sáng mai", "expect": {"tool_any": ["set_reminder", "create_task"], "remind_at": "2026-11-05T09:00"}}
+{"id": 30, "text": "đặt nhắc nhở uống thuốc sau 30 phút nữa", "expect": {"tool": "set_reminder", "remind_at": "2026-11-04T09:30"}}
+{"id": 31, "text": "nhắc mình việc nộp báo cáo vào 8 giờ tối nay", "seed": [{"title": "Nộp báo cáo", "due_at": "2026-11-05T17:00"}], "expect": {"tool": "set_reminder", "remind_at": "2026-11-04T20:00", "target": "Nộp báo cáo"}}
+{"id": 32, "text": "tiến độ công việc của mình thế nào", "seed": [{"title": "A", "status": "done"}, {"title": "B"}], "expect": {"tool_any": ["get_statistics", "list_tasks"]}}
+{"id": 33, "text": "thống kê giúp mình tuần này", "seed": [{"title": "A", "status": "done"}], "expect": {"tool_any": ["get_statistics", "list_tasks"]}}
+{"id": 34, "text": "xin chào, bạn có thể giúp gì cho mình", "expect": {"tool": null}}
+{"id": 35, "text": "cảm ơn bạn nhé", "expect": {"tool": null}}
+{"id": 36, "text": "thêm việc học tiếng anh với chạy bộ vào sáng mai", "expect": {"tool": "create_task", "count": 2}}
+{"id": 37, "text": "Thêm việc chuẩn bị slide thuyết trình, hạn thứ Hai tuần sau, rất gấp", "expect": {"tool": "create_task", "title_contains": ["slide"], "priority": "high", "due_date": "2026-11-09"}}
+{"id": 38, "text": "nhớ nộp đơn xin thực tập trước ngày 15", "expect": {"tool": "create_task", "title_contains": ["thực tập"], "due_date": "2026-11-15"}}
+{"id": 39, "text": "tìm các việc liên quan đến đồ án", "seed": [{"title": "Viết báo cáo đồ án"}, {"title": "Họp nhóm đồ án"}, {"title": "Đi chợ"}], "expect": {"tool": "list_tasks", "reply_contains": ["báo cáo", "Họp"], "reply_not_contains": ["chợ"]}}
+{"id": 40, "text": "xong hết các việc hôm nay rồi", "seed": [{"title": "Tập thể dục", "due_at": "2026-11-04T18:00"}, {"title": "Đọc sách", "due_at": "2026-11-04T21:00"}, {"title": "Họp tuần sau", "due_at": "2026-11-11T09:00"}], "expect": {"tool": "update_task", "status": "done", "targets_all": ["Tập thể dục", "Đọc sách"], "not_target": "Họp tuần sau"}}

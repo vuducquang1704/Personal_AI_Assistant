@@ -1,0 +1,100 @@
+:root {
+  --bg: #f6f7fb; --card: #fff; --text: #1f2333; --muted: #6b7085; --border: #e3e5ee;
+  --primary: #4f46e5; --primary-weak: #eef0ff; --danger: #dc2626; --ok: #16a34a; --warn: #f59e0b;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #12131a; --card: #1c1e28; --text: #e8e9f0; --muted: #9a9db0; --border: #2c2f3d; --primary-weak: #26284a; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+h1 { font-size: 1.5rem; margin: 0 0 1rem; } h2 { margin: 0 0 .5rem; } h3 { font-size: 1rem; margin: 1rem 0 .5rem; }
+a { color: var(--primary); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: 1px solid var(--border); background: var(--card); border-radius: 8px; padding: .5rem .9rem; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+button.link { background: none; border: none; padding: .25rem .4rem; color: var(--primary); }
+button.block { width: 100%; }
+input, select, textarea { width: 100%; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+textarea { min-height: 70px; }
+label { display: block; font-size: .9rem; margin-bottom: .75rem; } label > input, label > select, label > textarea { margin-top: .3rem; }
+label.check { display: flex; gap: .5rem; align-items: center; } label.check input { width: auto; margin: 0; }
+.muted { color: var(--muted); } .small { font-size: .82rem; } .center { display: grid; place-items: center; height: 100vh; }
+.error { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); padding: .5rem .75rem; border-radius: 8px; margin: .5rem 0; }
+.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); padding: .5rem .75rem; border-radius: 8px; margin-bottom: 1rem; }
+.danger-text { color: var(--danger); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; } .row > label { flex: 1; min-width: 150px; }
+.row.end { justify-content: flex-end; } .row.between { justify-content: space-between; padding: .25rem 0; }
+.grow { flex: 1; min-width: 0; cursor: pointer; }
+
+.layout { display: flex; flex-direction: column; height: 100dvh; }
+.topbar { display: flex; align-items: center; gap: 1rem; padding: .6rem 1rem; background: var(--card); border-bottom: 1px solid var(--border); }
+.brand { font-weight: 700; white-space: nowrap; }
+.topbar nav { display: flex; gap: .25rem; flex: 1; overflow-x: auto; }
+.topbar nav a { padding: .4rem .75rem; border-radius: 8px; text-decoration: none; color: var(--muted); white-space: nowrap; }
+.topbar nav a.active { background: var(--primary-weak); color: var(--primary); font-weight: 600; }
+main { flex: 1; overflow: auto; }
+.page { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem; } .page.narrow { max-width: 640px; }
+
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
+.auth .card { width: 100%; max-width: 400px; } .auth button.primary { width: 100%; margin-top: .5rem; }
+
+/* Trợ lý */
+.assistant { display: flex; height: 100%; }
+.convs { width: 240px; border-right: 1px solid var(--border); padding: .75rem; overflow-y: auto; display: flex; flex-direction: column; gap: .3rem; }
+.conv { text-align: left; border: none; background: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv.active { background: var(--primary-weak); color: var(--primary); }
+.chat { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .6rem; }
+.welcome { max-width: 560px; margin: 2rem auto; text-align: center; display: flex; flex-direction: column; gap: .5rem; }
+.suggestion { text-align: left; background: var(--card); }
+.msg { display: flex; flex-direction: column; max-width: 80%; } .msg.user { align-self: flex-end; align-items: flex-end; }
+.bubble { padding: .6rem .9rem; border-radius: 14px; background: var(--card); border: 1px solid var(--border); white-space: pre-wrap; line-height: 1.45; }
+.msg.user .bubble { background: var(--primary); color: #fff; border-color: var(--primary); }
+.typing { color: var(--muted); font-style: italic; }
+.chips { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem; }
+.chip { font-size: .75rem; background: var(--primary-weak); color: var(--primary); padding: .15rem .5rem; border-radius: 999px; }
+.confirm { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; background: color-mix(in srgb, var(--warn) 15%, var(--card)); border: 1px solid var(--warn); padding: .6rem .8rem; border-radius: 10px; }
+.confirm span { flex: 1; }
+.composer { display: flex; gap: .5rem; padding: .75rem; border-top: 1px solid var(--border); background: var(--card); }
+.composer input { flex: 1; }
+.mic { font-size: 1.2rem; width: 48px; flex-shrink: 0; border-radius: 50%; }
+.mic.on { background: var(--danger); border-color: var(--danger); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
+
+/* Công việc */
+.toolbar { display: flex; justify-content: space-between; align-items: center; } .toolbar h1 { margin: 0; }
+.filters { display: flex; gap: .5rem; margin: 1rem 0; flex-wrap: wrap; } .filters > * { flex: 1; min-width: 140px; }
+.tasks { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
+.task { display: flex; gap: .75rem; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .75rem; }
+.task input[type=checkbox] { width: 20px; height: 20px; margin-top: 2px; }
+.task.done .title { text-decoration: line-through; color: var(--muted); }
+.task.overdue { border-left: 4px solid var(--danger); }
+.task .title { font-weight: 600; } .meta { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; margin-top: .3rem; font-size: .8rem; }
+.badge { font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; background: var(--border); }
+.p-high { background: #fee2e2; color: #b91c1c; } .p-medium { background: #fef3c7; color: #92400e; } .p-low { background: #dcfce7; color: #166534; }
+
+/* Thống kê */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.tile { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+.tile .value { font-size: 1.8rem; font-weight: 700; } .tile.warn .value { color: var(--danger); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; } .grid2 .card { margin: 0 0 1rem; }
+.progress { height: 10px; background: var(--border); border-radius: 999px; overflow: hidden; } .progress div { height: 100%; background: var(--ok); }
+.bars { display: flex; gap: .5rem; align-items: flex-end; height: 160px; }
+.bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: .25rem; }
+.bar .fill { width: 100%; background: var(--primary); border-radius: 6px 6px 0 0; min-height: 2px; }
+ul.plain { list-style: none; padding: 0; margin: 0; }
+
+.toasts { position: fixed; right: 1rem; bottom: 5rem; display: flex; flex-direction: column; gap: .5rem; z-index: 10; max-width: calc(100vw - 2rem); }
+.toast { background: var(--card); border: 1px solid var(--warn); border-left: 4px solid var(--warn); border-radius: 10px; padding: .7rem .9rem; box-shadow: 0 4px 16px rgba(0,0,0,.12); display: flex; gap: .5rem; align-items: center; }
+
+@media (max-width: 720px) {
+  .convs { display: none; }
+  .msg { max-width: 92%; }
+  .grid2 { grid-template-columns: 1fr; }
+  .topbar { flex-wrap: wrap; gap: .5rem; } .topbar nav { order: 3; flex: 1 1 100%; }
+  .topbar .link { margin-left: auto; }
+}
