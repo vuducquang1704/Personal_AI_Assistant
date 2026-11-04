@@ -25,7 +25,11 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
-SCOPES = "openid email https://www.googleapis.com/auth/calendar.events"
+SCOPES = " ".join([
+    "openid",
+    "https://www.googleapis.com/auth/userinfo.email",  # quyền xem email, hiển thị trên thẻ Google Calendar
+    "https://www.googleapis.com/auth/calendar.events",
+])
 EVENT_MINUTES = 30
 PRIORITY_LABEL = {Priority.low: "thấp", Priority.medium: "trung bình", Priority.high: "cao"}
 
