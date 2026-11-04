@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { useChat } from "../lib/chat";
 import { speak, stopSpeaking, sttSupported, useSpeechRecognition } from "../lib/speech";
 import type { ChatMessage, PendingAction } from "../lib/types";
 import { IconAlert, IconBell, IconChart, IconCheck, IconClock, IconMic, IconPlus, IconSend, IconSparkle, IconSpeaker, IconStop, IconTasks, IconTrash } from "../components/Icons";
 
-interface Conv { id: number; title: string; created_at: string }
 interface ChatOut { conversation_id: number; reply: ChatMessage; pending_actions: PendingAction[] }
 
 const SUGGESTIONS: { icon: ReactNode; text: string }[] = [
@@ -51,8 +51,8 @@ function ActionCards({ actions }: { actions: ChatMessage["actions"] }) {
 export default function Assistant() {
   const { user } = useAuth();
   const voice = user?.voice_settings ?? {};
-  const [convs, setConvs] = useState<Conv[]>([]);
-  const [convId, setConvId] = useState<number | null>(null);
+  const { convId, setConvId, reload: loadConvs, newChatTick } = useChat();
+  const justCreated = useRef<number | null>(null);  // cuộc trò chuyện vừa tạo khi gửi tin, đã có sẵn nội dung trong khung
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<PendingAction[]>([]);
   const [input, setInput] = useState("");
@@ -60,16 +60,19 @@ export default function Assistant() {
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  const loadConvs = () => api<Conv[]>("/api/chat/conversations").then(setConvs).catch(() => {});
-  useEffect(() => { loadConvs(); }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy, pending]);
 
-  const openConv = async (id: number | null) => {
+  // Thanh bên đổi cuộc trò chuyện (hoặc bấm "Trò chuyện mới") -> tải lại nội dung khung chat
+  useEffect(() => {
+    if (convId !== null && convId === justCreated.current) return;
     stopSpeaking();
-    setConvId(id);
     setPending([]);
-    setMessages(id ? await api<ChatMessage[]>(`/api/chat/conversations/${id}`) : []);
-  };
+    setError("");
+    if (convId === null) { setMessages([]); return; }
+    let stale = false;
+    api<ChatMessage[]>(`/api/chat/conversations/${convId}`).then((m) => { if (!stale) setMessages(m); }).catch(() => {});
+    return () => { stale = true; };
+  }, [convId, newChatTick]);
 
   const send = useCallback(async (text: string, mode: "text" | "voice") => {
     if (!text.trim() || busy) return;
@@ -82,14 +85,14 @@ export default function Assistant() {
       const r = await api<ChatOut>("/api/chat", { body: { message: text, conversation_id: convId, input_mode: mode } });
       setMessages((m) => [...m, r.reply]);
       setPending((p) => [...p, ...r.pending_actions]);
-      if (!convId) { setConvId(r.conversation_id); loadConvs(); }
+      if (!convId) { justCreated.current = r.conversation_id; setConvId(r.conversation_id); loadConvs(); }
       if (voice.auto_speak !== false || mode === "voice") speak(r.reply.text, voice);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
-  }, [busy, convId, voice]);
+  }, [busy, convId, voice, setConvId, loadConvs]);
 
   const stt = useSpeechRecognition((t) => send(t, "voice"));
 
@@ -106,13 +109,6 @@ export default function Assistant() {
 
   return (
     <div className="assistant">
-      <aside className="convs">
-        <button className="primary block" onClick={() => openConv(null)}><IconPlus size={18} />Cuộc trò chuyện mới</button>
-        {convs.length > 0 && <h4>Gần đây</h4>}
-        {convs.map((c) => (
-          <button key={c.id} className={`conv ${c.id === convId ? "active" : ""}`} onClick={() => openConv(c.id)} title={c.title}>{c.title}</button>
-        ))}
-      </aside>
       <section className="chat">
         <div className="messages">
           {messages.length === 0 ? (

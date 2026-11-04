@@ -1,8 +1,9 @@
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { ChatProvider, useChat } from "./lib/chat";
 import { useTheme } from "./lib/theme";
 import ReminderWatcher from "./components/ReminderWatcher";
-import { IconChart, IconLogout, IconMic, IconMoon, IconSettings, IconSun, IconTasks } from "./components/Icons";
+import { IconChart, IconLogout, IconMic, IconMoon, IconPlus, IconSettings, IconSun, IconTasks } from "./components/Icons";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
@@ -16,6 +17,34 @@ function ThemeButton() {
       {theme === "dark" ? <IconSun /> : <IconMoon />}
     </button>
   );
+}
+
+/** Mục "Trợ lý" kèm nút trò chuyện mới và danh sách trò chuyện gần đây, nằm gọn trong thanh bên. */
+function AssistantNav() {
+  const { convs, convId, setConvId, startNew } = useChat();
+  const nav = useNavigate();
+  const onAssistant = useLocation().pathname === "/";
+  const open = (id: number | null) => { if (id === null) startNew(); else setConvId(id); nav("/"); };
+  return (
+    <div className="nav-group">
+      <NavLink to="/" end><IconMic />Trợ lý</NavLink>
+      <div className="subnav">
+        <button className="new-chat" onClick={() => open(null)}><IconPlus size={16} />Trò chuyện mới</button>
+        {convs.length > 0 && <h4>Gần đây</h4>}
+        <div className="recent">
+          {convs.map((c) => (
+            <button key={c.id} className={`conv ${onAssistant && c.id === convId ? "active" : ""}`} onClick={() => open(c.id)} title={c.title}>{c.title}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewChatButton() {
+  const { startNew } = useChat();
+  const nav = useNavigate();
+  return <button className="icon-btn" onClick={() => { startNew(); nav("/"); }} title="Trò chuyện mới" aria-label="Trò chuyện mới"><IconPlus /></button>;
 }
 
 function Shell() {
@@ -34,7 +63,7 @@ function Shell() {
       <aside className="sidebar">
         <div className="brand"><span className="logo"><IconMic size={18} /></span>Trợ lý AI</div>
         <nav className="nav">
-          <NavLink to="/" end><IconMic />Trợ lý</NavLink>
+          <AssistantNav />
           <NavLink to="/tasks"><IconTasks />Công việc</NavLink>
           <NavLink to="/dashboard"><IconChart />Thống kê</NavLink>
           <NavLink to="/settings"><IconSettings />Cài đặt</NavLink>
@@ -54,6 +83,7 @@ function Shell() {
         <div className="mobile-top">
           <div className="brand"><span className="logo"><IconMic size={18} /></span>Trợ lý AI</div>
           <div className="row" style={{ gap: 0 }}>
+            <NewChatButton />
             <ThemeButton />
             <button className="icon-btn" onClick={logout} aria-label="Đăng xuất"><IconLogout /></button>
           </div>
@@ -76,7 +106,9 @@ function Shell() {
 export default function App() {
   return (
     <AuthProvider>
-      <Shell />
+      <ChatProvider>
+        <Shell />
+      </ChatProvider>
     </AuthProvider>
   );
 }

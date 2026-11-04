@@ -54,6 +54,15 @@ input[type=range] { padding: 0; accent-color: var(--primary); }
 .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 1.1rem .8rem; display: flex; flex-direction: column; gap: .25rem; }
 .brand { display: flex; align-items: center; gap: .65rem; font-weight: 700; font-size: 1.05rem; padding: .25rem .6rem 1.1rem; letter-spacing: -.01em; }
 .logo { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 40%, transparent); }
+.nav { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.nav-group { display: flex; flex-direction: column; min-height: 0; margin-bottom: 2px; }
+.subnav { display: flex; flex-direction: column; min-height: 0; margin: 2px 0 6px 1.1rem; padding-left: .6rem; border-left: 1px solid var(--border); }
+.subnav h4 { margin: .6rem .5rem .25rem; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.subnav .recent { display: flex; flex-direction: column; gap: 1px; max-height: 38vh; overflow-y: auto; }
+.new-chat { display: flex; align-items: center; gap: .5rem; justify-content: flex-start; border: 1px dashed var(--border); background: none; color: var(--primary); font-weight: 600; padding: .45rem .7rem; border-radius: 10px; font-size: .88rem; }
+.new-chat:hover { background: var(--primary-soft); }
+.subnav .conv { display: block; width: 100%; font-size: .86rem; padding: .4rem .6rem; border-radius: 8px; flex-shrink: 0; }
+.subnav .conv:hover { background: var(--surface-2); color: var(--text); }
 .nav a { display: flex; align-items: center; gap: .7rem; padding: .6rem .75rem; border-radius: 12px; color: var(--muted); font-weight: 500; text-decoration: none; margin-bottom: 2px; }
 .nav a:hover { background: var(--surface-2); color: var(--text); }
 .nav a.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
@@ -76,7 +85,7 @@ main { overflow: auto; min-width: 0; }
 .auth-form { width: 100%; max-width: 400px; } .auth-form h1 { margin-bottom: .3rem; } .auth-form button.primary { width: 100%; margin-top: .4rem; padding: .75rem; }
 
 /* ---------- Trợ lý ---------- */
-.assistant { display: grid; grid-template-columns: 250px 1fr; grid-template-rows: minmax(0, 1fr); height: 100%; min-height: 0; }
+.assistant { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100%; min-height: 0; }
 .convs { border-right: 1px solid var(--border); padding: 1rem .8rem; overflow-y: auto; display: flex; flex-direction: column; gap: .25rem; background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .convs h4 { margin: .9rem .5rem .3rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .conv { text-align: left; border: none; background: none; justify-content: flex-start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; color: var(--muted); padding: .5rem .7rem; }
@@ -154,7 +163,7 @@ ul.plain { list-style: none; padding: 0; margin: .6rem 0 0; } ul.plain li { padd
   .sidebar { grid-row: 2; flex-direction: row; border-right: none; border-top: 1px solid var(--border); padding: .35rem .5rem calc(.35rem + env(safe-area-inset-bottom)); gap: .2rem; justify-content: space-around; }
   .brand, .side-foot { display: none; }
   .nav { display: flex; width: 100%; justify-content: space-around; } .nav a { flex-direction: column; gap: .1rem; font-size: .68rem; padding: .35rem .6rem; margin: 0; }
-  .assistant { grid-template-columns: 1fr; } .convs { display: none; }
+  .assistant { grid-template-columns: minmax(0, 1fr); } .subnav { display: none; }
   .suggestions { grid-template-columns: 1fr; } .msg-body { max-width: 90%; }
   .tiles { grid-template-columns: repeat(2, 1fr); } .grid2 { grid-template-columns: 1fr; } .page { padding: 1.2rem 1rem 2rem; }
   .auth { grid-template-columns: 1fr; } .auth-hero { padding: 1.6rem 1.4rem; } .auth-hero h2 { font-size: 1.5rem; } .auth-hero ul { display: none; }
