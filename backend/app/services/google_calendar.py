@@ -326,3 +326,25 @@ def sync_all(db: Session, user: User) -> int:
     tasks = db.scalars(select(Task).where(Task.user_id == user.id, Task.due_at.is_not(None),
                                           Task.status != TaskStatus.done))
     return sum(1 for t in list(tasks) if sync_task(db, t))
+
+
+def calendar_state(db: Session, user_id: int, *, task_id: int | None = None,
+                   reminder_id: int | None = None) -> dict:
+    """Trạng thái đồng bộ để trợ lý báo đúng cho người dùng (không đoán mò).
+
+    synced: True nếu sự kiện đã nằm trên lịch, False nếu chưa, None nếu không áp dụng (ví dụ việc không có hạn).
+    """
+    acc = get_account(db, user_id)
+    if not acc:
+        return {"connected": False, "synced": None, "message": "Chưa kết nối Google Calendar"}
+    if not acc.sync_enabled:
+        return {"connected": True, "synced": None, "message": "Đồng bộ Google Calendar đang tắt trong Cài đặt"}
+    synced = None
+    if task_id is not None:
+        synced = _task_link(db, task_id) is not None
+    elif reminder_id is not None:
+        synced = db.scalar(select(CalendarEvent).where(CalendarEvent.reminder_id == reminder_id)) is not None
+    out = {"connected": True, "synced": synced}
+    if acc.last_error:
+        out["error"] = acc.last_error
+    return out

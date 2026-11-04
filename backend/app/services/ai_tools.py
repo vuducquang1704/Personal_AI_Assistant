@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..models import PendingAction, Priority, Task, TaskStatus, User
 from ..timeutil import to_local_str
+from . import google_calendar as gc
 from . import task_service as ts
 
 
@@ -159,7 +160,8 @@ class ToolExecutor:
                               priority=Priority(priority or "medium"))
         data = task_to_dict(task)
         self.actions.append({"type": "create_task", "task": data})
-        return {"ok": True, "task": data}
+        cal = gc.calendar_state(self.db, self.user.id, task_id=task.id) if task.due_at else None
+        return {"ok": True, "task": data, "calendar": cal}
 
     def _t_list_tasks(self, status=None, priority=None, due_from=None, due_to=None, search=None, overdue=False):
         tasks = ts.list_tasks(self.db, self.user, status=status, priority=priority, due_from=_dt(due_from),
@@ -181,7 +183,8 @@ class ToolExecutor:
         ts.update_task(self.db, task, **fields)
         data = task_to_dict(task)
         self.actions.append({"type": "update_task", "task": data, "changed": sorted(fields)})
-        return {"ok": True, "task": data}
+        cal = gc.calendar_state(self.db, self.user.id, task_id=task.id) if task.due_at else None
+        return {"ok": True, "task": data, "calendar": cal}
 
     def _t_delete_task(self, task_id):
         task = self._own(task_id)
@@ -201,7 +204,8 @@ class ToolExecutor:
         r = ts.create_reminder(self.db, self.user, message=message, remind_at=_dt(remind_at), task_id=task_id)
         data = {"id": r.id, "message": r.message, "remind_at": to_local_str(r.remind_at), "task_id": task_id}
         self.actions.append({"type": "set_reminder", "reminder": data})
-        return {"ok": True, "reminder": data}
+        cal = gc.calendar_state(self.db, self.user.id, reminder_id=r.id) if task_id is None else None
+        return {"ok": True, "reminder": data, "calendar": cal}
 
     def _t_get_statistics(self):
         s = ts.stats(self.db, self.user)

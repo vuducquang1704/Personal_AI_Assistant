@@ -1,3 +1,4 @@
+import json
 """Kiểm thử tích hợp Google Calendar với máy chủ Google giả lập (httpx.MockTransport)."""
 import json
 from urllib.parse import parse_qs, urlparse
@@ -187,3 +188,19 @@ def test_callback_requires_same_browser(client, auth, google):
     r = client.get("/api/google/callback", params={"code": "good-code", "state": state}, follow_redirects=False)
     assert r.headers["location"].endswith("google=error")
     assert client.get("/api/google/status", headers=auth).json()["connected"] is False
+
+
+def test_calendar_state_reports_real_sync(client, auth, google):
+    from app.db import SessionLocal
+    from app.models import User
+    from app.services import ai_tools
+    _connect(client, auth)
+    with SessionLocal() as db:
+        user = db.query(User).one()
+        ex = ai_tools.ToolExecutor(db, user)
+        out = json.loads(ex.run("create_task", {"title": "Họp nhóm", "description": None,
+                                     "due_at": "2026-11-05T15:00", "priority": "none"}))
+        assert out["calendar"] == {"connected": True, "synced": True}
+        out = json.loads(ex.run("create_task", {"title": "Đọc sách", "description": None, "due_at": None, "priority": "none"}))
+        assert out["calendar"] is None  # không có hạn thì không áp dụng
+    assert len(google.events) == 1
