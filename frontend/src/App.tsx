@@ -1,9 +1,10 @@
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { ChatProvider, useChat } from "./lib/chat";
+import { api } from "./lib/api";
 import { useTheme } from "./lib/theme";
 import ReminderWatcher from "./components/ReminderWatcher";
-import { IconChart, IconLogout, IconMic, IconMoon, IconPlus, IconSettings, IconSun, IconTasks } from "./components/Icons";
+import { IconChart, IconLogout, IconMic, IconMoon, IconPlus, IconSettings, IconSun, IconTasks, IconTrash } from "./components/Icons";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
@@ -21,10 +22,20 @@ function ThemeButton() {
 
 /** Mục "Trợ lý" kèm nút trò chuyện mới và danh sách trò chuyện gần đây, nằm gọn trong thanh bên. */
 function AssistantNav() {
-  const { convs, convId, setConvId, startNew } = useChat();
+  const { convs, convId, setConvId, startNew, reload } = useChat();
   const nav = useNavigate();
   const onAssistant = useLocation().pathname === "/";
   const open = (id: number | null) => { if (id === null) startNew(); else setConvId(id); nav("/"); };
+  const remove = async (id: number, title: string) => {
+    if (!confirm(`Xoá cuộc trò chuyện "${title}"? Việc này không thể hoàn tác.`)) return;
+    try {
+      await api(`/api/chat/conversations/${id}`, { method: "DELETE" });
+      if (id === convId) startNew();
+      await reload();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  };
   return (
     <div className="nav-group">
       <NavLink to="/" end><IconMic />Trợ lý</NavLink>
@@ -33,7 +44,10 @@ function AssistantNav() {
         {convs.length > 0 && <h4>Gần đây</h4>}
         <div className="recent">
           {convs.map((c) => (
-            <button key={c.id} className={`conv ${onAssistant && c.id === convId ? "active" : ""}`} onClick={() => open(c.id)} title={c.title}>{c.title}</button>
+            <div key={c.id} className={`conv-row ${onAssistant && c.id === convId ? "active" : ""}`}>
+              <button className="conv" onClick={() => open(c.id)} title={c.title}>{c.title}</button>
+              <button className="conv-del" onClick={() => remove(c.id, c.title)} title="Xoá cuộc trò chuyện" aria-label={`Xoá cuộc trò chuyện ${c.title}`}><IconTrash size={14} /></button>
+            </div>
           ))}
         </div>
       </div>
