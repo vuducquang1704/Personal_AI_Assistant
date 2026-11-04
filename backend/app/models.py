@@ -112,3 +112,33 @@ class PendingAction(Base):
     summary: Mapped[str] = mapped_column(String(500))
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | confirmed | cancelled
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class GoogleAccount(Base):
+    """Kết nối Google Calendar của một người dùng. Token được mã hoá trước khi lưu."""
+
+    __tablename__ = "google_accounts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    refresh_token_enc: Mapped[str] = mapped_column(Text)
+    access_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    access_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sync_enabled: Mapped[bool] = mapped_column(default=True)
+    reminder_minutes: Mapped[int] = mapped_column(default=30)  # nhắc trước hạn bao nhiêu phút
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CalendarEvent(Base):
+    """Liên kết giữa một công việc/nhắc nhở và sự kiện tương ứng trên Google Calendar."""
+
+    __tablename__ = "calendar_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, unique=True)
+    reminder_id: Mapped[int | None] = mapped_column(ForeignKey("reminders.id", ondelete="SET NULL"), nullable=True, unique=True)
+    event_id: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Priority, Reminder, Task, TaskStatus, User
 from ..timeutil import as_utc, from_db, local_tz, now_utc
+from . import google_calendar as gc
 
 
 def get_task(db: Session, user: User, task_id: int) -> Task | None:
@@ -23,6 +24,7 @@ def create_task(db: Session, user: User, *, title: str, description: str | None 
     db.add(task)
     db.commit()
     db.refresh(task)
+    gc.sync_task(db, task)
     return task
 
 
@@ -41,10 +43,14 @@ def update_task(db: Session, task: Task, **fields) -> Task:
         setattr(task, key, value)
     db.commit()
     db.refresh(task)
+    if fields.keys() & {"title", "description", "due_at", "priority", "status"}:
+        gc.sync_task(db, task)
     return task
 
 
 def delete_task(db: Session, task: Task) -> None:
+    gc.unsync_task(db, task)
+    gc.forget_task(db, task)  # nếu Google lỗi, bỏ liên kết; sự kiện cũ vẫn nằm trên lịch
     db.delete(task)
     db.commit()
 
@@ -77,6 +83,7 @@ def create_reminder(db: Session, user: User, *, message: str, remind_at: datetim
     db.add(r)
     db.commit()
     db.refresh(r)
+    gc.sync_reminder(db, r)
     return r
 
 

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import Base, engine
-from .routers import auth, chat, reminders, tasks
+from .routers import auth, chat, google, reminders, tasks
 from .services.reminder_worker import reminder_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -29,7 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for r in (auth.router, tasks.router, reminders.router, chat.router):
+for r in (auth.router, tasks.router, reminders.router, chat.router, google.router):
     app.include_router(r)
 
 

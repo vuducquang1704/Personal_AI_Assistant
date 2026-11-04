@@ -103,6 +103,31 @@ Sau đó đặt tên miền và HTTPS (bắt buộc để dùng micro), ví dụ
 Thu phản hồi người dùng: mời 10-20 bạn dùng thử trong 1-2 tuần, dữ liệu `chat_messages` (có `latency_ms`, `actions`)
 dùng để phân tích, kết hợp phiếu khảo sát (Google Form) về độ hài lòng và độ chính xác.
 
+## Kết nối Google Calendar
+
+Khi người dùng kết nối, mọi công việc có hạn chót (tạo bằng giọng nói hay bằng tay) trở thành sự kiện
+30 phút trên lịch chính của họ, kèm thông báo nhắc trước hạn (mặc định 30 phút, đổi được trong Cài đặt).
+Sửa việc thì sự kiện được sửa theo, hoàn thành hoặc xoá việc thì sự kiện bị gỡ. Nhắc nhở độc lập
+("nhắc tôi 8 giờ tối gọi mẹ") thành sự kiện có thông báo đúng giờ. Việc ưu tiên cao có màu đỏ.
+Lỗi từ Google không làm hỏng thao tác chính, chỉ hiện cảnh báo ở trang Cài đặt.
+
+Cấu hình một lần (miễn phí):
+
+1. Vào https://console.cloud.google.com, tạo project mới (ví dụ `tro-ly-ai`).
+2. **APIs & Services → Library**: tìm *Google Calendar API* và bấm **Enable**.
+3. **Google Auth Platform → Branding** (hoặc *OAuth consent screen*): User type **External**, điền tên ứng dụng và email.
+   Ở mục **Audience** giữ trạng thái *Testing* và thêm Gmail của bạn (và người dùng thử) vào **Test users**.
+4. **Data Access**: thêm scope `.../auth/calendar.events`, `openid`, `email`.
+5. **Clients → Create client**: loại **Web application**, mục *Authorized redirect URIs* thêm
+   `http://localhost:5173/api/google/callback` (chạy Docker thì thêm `http://localhost:8080/api/google/callback`,
+   triển khai thật thì `https://tenmien.vn/api/google/callback`).
+6. Chép *Client ID* và *Client secret* vào `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), khởi động lại backend.
+7. Vào **Cài đặt → Google Calendar → Kết nối Google Calendar**, đăng nhập và đồng ý.
+   Google sẽ cảnh báo "ứng dụng chưa được xác minh" vì đang ở chế độ Testing: bấm *Tiếp tục* là được.
+
+Lưu ý: ở chế độ Testing, Google cho refresh token sống 7 ngày, hết hạn thì bấm *Kết nối lại*. Token được mã hoá
+(Fernet, khoá suy ra từ `JWT_SECRET`) trước khi lưu vào bảng `google_accounts`; đổi `JWT_SECRET` thì phải kết nối lại.
+
 ## Cấu hình
 
 | Biến | Mặc định | Ý nghĩa |
@@ -114,6 +139,9 @@ dùng để phân tích, kết hợp phiếu khảo sát (Google Form) về đ�
 | `JWT_SECRET` | | Khoá ký token, bắt buộc đổi khi triển khai |
 | `CORS_ORIGINS` | http://localhost:5173 | Các origin được gọi API |
 | `TIMEZONE` | Asia/Ho_Chi_Minh | Múi giờ để hiểu "hôm nay", "mai"... |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | | OAuth client cho Google Calendar; để trống thì tắt tính năng |
+| `GOOGLE_REDIRECT_URI` | http://localhost:5173/api/google/callback | Địa chỉ Google gọi lại, phải khớp với Google Cloud Console |
+| `FRONTEND_URL` | http://localhost:5173 | Trang giao diện để quay về sau khi kết nối Google |
 
 ## Cấu trúc thư mục
 

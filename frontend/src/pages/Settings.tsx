@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import GoogleCalendarCard from "../components/GoogleCalendarCard";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { speak, sttSupported, ttsSupported, useVietnameseVoices } from "../lib/speech";
@@ -52,6 +53,7 @@ export default function Settings() {
           <button className="primary">Lưu</button>
         </div>
       </form>
+      <GoogleCalendarCard />
       <form className="card form" onSubmit={changePw}>
         <h3>Đổi mật khẩu</h3>
         <label>Mật khẩu hiện tại<input type="password" required value={pw.old_password} onChange={(e) => setPw({ ...pw, old_password: e.target.value })} /></label>

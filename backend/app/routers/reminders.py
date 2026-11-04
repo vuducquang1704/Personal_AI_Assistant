@@ -6,6 +6,7 @@ from ..db import get_db
 from ..models import Reminder, User
 from ..schemas import ReminderIn, ReminderOut
 from ..security import get_current_user
+from ..services import google_calendar as gc
 from ..services import task_service as ts
 
 router = APIRouter(prefix="/api/reminders", tags=["reminders"])
@@ -44,5 +45,7 @@ def delete(reminder_id: int, user: User = Depends(get_current_user), db: Session
     r = db.get(Reminder, reminder_id)
     if not r or r.user_id != user.id:
         raise HTTPException(404, "Không tìm thấy nhắc nhở")
+    gc.unsync_reminder(db, r)
+    gc.forget_reminder(db, r)
     db.delete(r)
     db.commit()
