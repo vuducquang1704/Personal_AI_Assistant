@@ -29,13 +29,13 @@ export default function Settings() {
 
   return (
     <div className="page narrow">
-      <h1>Cài đặt</h1>
+      <div className="page-head"><div><h1>Cài đặt</h1><p className="muted">Tài khoản và giọng nói của trợ lý</p></div></div>
       {msg && <div className="ok">{msg}</div>}
-      <form className="card form" onSubmit={save}>
-        <h3>Tài khoản</h3>
+      <form className="card" style={{ marginBottom: "1rem" }} onSubmit={save}>
+        <h3 style={{ marginBottom: ".8rem" }}>Tài khoản</h3>
         <label>Email<input value={user?.email} disabled /></label>
         <label>Họ và tên<input value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <h3>Giọng nói của trợ lý</h3>
+        <h3 style={{ margin: "1.2rem 0 .8rem" }}>Giọng nói của trợ lý</h3>
         {!ttsSupported() && <p className="error">Trình duyệt không hỗ trợ đọc văn bản.</p>}
         {!sttSupported() && <p className="error">Trình duyệt không hỗ trợ nhận dạng giọng nói, hãy dùng Chrome hoặc Edge.</p>}
         <label>Giọng đọc
@@ -52,8 +52,8 @@ export default function Settings() {
           <button className="primary">Lưu</button>
         </div>
       </form>
-      <form className="card form" onSubmit={changePw}>
-        <h3>Đổi mật khẩu</h3>
+      <form className="card" onSubmit={changePw}>
+        <h3 style={{ marginBottom: ".8rem" }}>Đổi mật khẩu</h3>
         <label>Mật khẩu hiện tại<input type="password" required value={pw.old_password} onChange={(e) => setPw({ ...pw, old_password: e.target.value })} /></label>
         <label>Mật khẩu mới<input type="password" required minLength={6} value={pw.new_password} onChange={(e) => setPw({ ...pw, new_password: e.target.value })} /></label>
         <div className="row end"><button className="primary">Đổi mật khẩu</button></div>

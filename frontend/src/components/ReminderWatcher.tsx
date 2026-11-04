@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { speak } from "../lib/speech";
 import type { Reminder } from "../lib/types";
+import { IconBell } from "./Icons";
 
 /** Hỏi server mỗi 30 giây, hiện thông báo và đọc to các nhắc nhở đến hạn. */
 export default function ReminderWatcher() {
@@ -40,7 +41,7 @@ export default function ReminderWatcher() {
     <div className="toasts">
       {items.map((r) => (
         <div key={r.id} className="toast">
-          <span>⏰ {r.message.replace(/^\[auto\]\s*/, "")}</span>
+          <span className="ic"><IconBell size={18} /></span><span>{r.message.replace(/^\[auto\]\s*/, "")}</span>
           <button className="link" onClick={() => dismiss(r)}>Đã xem</button>
         </div>
       ))}

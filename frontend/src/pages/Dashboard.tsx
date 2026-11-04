@@ -1,6 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api, formatDate } from "../lib/api";
 import { PRIORITY_LABEL, type Priority, type Stats, type Task } from "../lib/types";
+import { IconAlert, IconCheck, IconClock, IconTasks } from "../components/Icons";
+
+function Tile({ icon, label, value, tone = "" }: { icon: ReactNode; label: string; value: number; tone?: string }) {
+  return (
+    <div className={`tile ${tone}`}>
+      <span className="ic">{icon}</span>
+      <span className="value">{value}</span>
+      <span className="muted small">{label}</span>
+    </div>
+  );
+}
+
+function Ring({ value }: { value: number }) {
+  const r = 52, c = 2 * Math.PI * r;
+  return (
+    <div className="ring">
+      <svg viewBox="0 0 130 130" width="130" height="130">
+        <circle cx="65" cy="65" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="12" />
+        <circle cx="65" cy="65" r={r} fill="none" stroke="var(--ok)" strokeWidth="12" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - value)} transform="rotate(-90 65 65)" style={{ transition: "stroke-dashoffset .6s" }} />
+      </svg>
+      <div className="pct">{Math.round(value * 100)}%</div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [s, setS] = useState<Stats | null>(null);
@@ -14,36 +39,38 @@ export default function Dashboard() {
 
   if (!s) return <div className="page muted">Đang tải…</div>;
   const max = Math.max(1, ...s.completed_last_7_days.map((d) => d.count));
-  const tiles = [
-    ["Tổng số việc", s.total], ["Đang mở", s.todo + s.in_progress], ["Hoàn thành", s.done],
-    ["Quá hạn", s.overdue], ["Đến hạn hôm nay", s.due_today], ["Đến hạn 7 ngày tới", s.due_this_week],
-  ] as const;
+  const open = s.todo + s.in_progress;
 
   return (
     <div className="page">
-      <h1>Thống kê tiến độ</h1>
+      <div className="page-head"><div><h1>Thống kê tiến độ</h1><p className="muted">Tổng quan công việc của bạn</p></div></div>
       <div className="tiles">
-        {tiles.map(([label, v]) => (
-          <div key={label} className={`tile ${label === "Quá hạn" && v > 0 ? "warn" : ""}`}>
-            <div className="value">{v}</div><div className="muted small">{label}</div>
-          </div>
-        ))}
+        <Tile icon={<IconTasks size={18} />} label="Tổng số việc" value={s.total} />
+        <Tile icon={<IconClock size={18} />} label="Đang mở" value={open} tone="amber" />
+        <Tile icon={<IconCheck size={18} />} label="Hoàn thành" value={s.done} tone="ok" />
+        <Tile icon={<IconAlert size={18} />} label="Quá hạn" value={s.overdue} tone={s.overdue > 0 ? "warn" : ""} />
+        <Tile icon={<IconClock size={18} />} label="Đến hạn hôm nay" value={s.due_today} />
+        <Tile icon={<IconClock size={18} />} label="Đến hạn 7 ngày tới" value={s.due_this_week} />
       </div>
       <div className="grid2">
         <div className="card">
           <h3>Tỉ lệ hoàn thành</h3>
-          <div className="progress"><div style={{ width: `${s.completion_rate * 100}%` }} /></div>
-          <p className="muted small">{Math.round(s.completion_rate * 100)}% công việc đã hoàn thành</p>
-          <h3>Việc đang mở theo mức ưu tiên</h3>
-          {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
-            <div key={p} className="row between"><span className={`badge p-${p}`}>{PRIORITY_LABEL[p]}</span><b>{s.by_priority[p]}</b></div>
-          ))}
+          <div className="ring-wrap">
+            <Ring value={s.completion_rate} />
+            <div className="legend">
+              <span className="muted small">Việc đang mở theo ưu tiên</span>
+              {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
+                <div key={p} className="row between"><span className={`badge p-${p}`}>{PRIORITY_LABEL[p]}</span><b>{s.by_priority[p]}</b></div>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="card">
           <h3>Hoàn thành 7 ngày qua</h3>
           <div className="bars">
             {s.completed_last_7_days.map((d) => (
-              <div key={d.date} className="bar">
+              <div key={d.date} className={`bar ${d.count === 0 ? "empty-bar" : ""}`}>
+                <span className="num">{d.count || ""}</span>
                 <div className="fill" style={{ height: `${(d.count / max) * 100}%` }} title={`${d.count} việc`} />
                 <span className="small muted">{d.date.slice(8)}/{d.date.slice(5, 7)}</span>
               </div>
@@ -53,9 +80,14 @@ export default function Dashboard() {
       </div>
       <div className="card">
         <h3>Sắp đến hạn</h3>
-        {upcoming.length === 0 ? <p className="muted">Không có việc nào đến hạn trong 7 ngày tới.</p> : (
+        {upcoming.length === 0 ? <p className="muted" style={{ marginBottom: 0 }}>Không có việc nào đến hạn trong 7 ngày tới.</p> : (
           <ul className="plain">
-            {upcoming.map((t) => <li key={t.id} className="row between"><span>{t.title}</span><span className="muted small">{formatDate(t.due_at)}</span></li>)}
+            {upcoming.map((t) => (
+              <li key={t.id} className="row between">
+                <span style={{ display: "flex", gap: ".6rem", alignItems: "center" }}><span className={`badge p-${t.priority}`}>{PRIORITY_LABEL[t.priority]}</span>{t.title}</span>
+                <span className="muted small">{formatDate(t.due_at)}</span>
+              </li>
+            ))}
           </ul>
         )}
       </div>
