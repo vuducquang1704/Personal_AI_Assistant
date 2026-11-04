@@ -335,3 +335,35 @@ def test_digest_reminder_contains_summary(client, auth, google, monkeypatch):
     daily_email_digests(datetime(2026, 11, 4, 8, 5, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh")))
     rems = client.get("/api/reminders", headers=auth).json()
     assert any("1 email quan trọng" in r["message"] and "duyệt đồ án thứ Năm" in r["message"] for r in rems)
+
+
+def test_write_tools_blocked_after_reading_email(client, auth, google, monkeypatch):
+    from app.db import SessionLocal
+    from app.models import User
+    from app.services import ai_tools
+    _fake_ai(monkeypatch)
+    _connect(client, auth)
+    _inbox(google)
+    with SessionLocal() as db:
+        ex = ai_tools.ToolExecutor(db, db.query(User).one())
+        out = json.loads(ex.run("check_emails", {}))
+        assert "không đáng tin" in out["luu_y"]
+        with pytest.raises(ai_tools.ToolError):  # email giả mạo không thể khiến trợ lý tạo việc ngay lượt đó
+            ex.run("create_task", {"title": "X", "description": None, "due_at": None, "priority": "none"})
+        # lượt mới (bộ thực thi mới) vẫn tạo bình thường
+        ex2 = ai_tools.ToolExecutor(db, db.query(User).one())
+        ex2.run("create_task", {"title": "X", "description": None, "due_at": None, "priority": "none"})
+
+
+def test_disconnect_deletes_email_data(client, auth, google, monkeypatch):
+    from app.db import SessionLocal
+    from app.models import EmailSummary
+    _fake_ai(monkeypatch)
+    _connect(client, auth)
+    _inbox(google)
+    client.get("/api/google/emails?summarize=true", headers=auth)
+    with SessionLocal() as db:
+        assert db.query(EmailSummary).count() == 1
+    client.delete("/api/google", headers=auth)
+    with SessionLocal() as db:
+        assert db.query(EmailSummary).count() == 0

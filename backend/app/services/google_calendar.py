@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..crypto import decrypt, encrypt
-from ..models import CalendarEvent, GoogleAccount, Priority, Reminder, Task, TaskStatus, User
+from ..models import (CalendarEvent, EmailDigest, EmailSettings, EmailSummary, EmailTask, GoogleAccount,
+                      Priority, Reminder, Task, TaskStatus, User)
 from ..timeutil import from_db, local_tz, now_utc
 
 log = logging.getLogger(__name__)
@@ -147,6 +148,10 @@ def disconnect(db: Session, user_id: int) -> None:
             log.warning("Không thu hồi được token Google của user %s", user_id)
     for ev in db.scalars(select(CalendarEvent).where(CalendarEvent.user_id == user_id)):
         db.delete(ev)
+    # Xoá dữ liệu email đã lưu (bản tóm tắt AI, lịch nhắc, tuỳ chọn); các việc đã tạo vẫn giữ
+    for model in (EmailSummary, EmailDigest, EmailSettings, EmailTask):
+        for row in db.scalars(select(model).where(model.user_id == user_id)):
+            db.delete(row)
     db.delete(acc)
     db.commit()
 
