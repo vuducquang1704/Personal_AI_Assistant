@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..models import ChatMessage, Conversation, User
 from ..timeutil import local_tz, now_utc
+from . import gemini
 from .ai_tools import TOOLS, ToolError, ToolExecutor
 
 log = logging.getLogger(__name__)
@@ -47,19 +48,23 @@ def _client() -> anthropic.Anthropic:
 
 
 def call_llm(messages: list[dict]):
-    """Gọi Claude. Tách thành hàm riêng để dễ thay thế (mock) khi kiểm thử."""
+    """Gọi LLM (Claude hoặc Gemini). Tách thành hàm riêng để dễ thay thế (mock) khi kiểm thử."""
     s = get_settings()
+    if s.provider == "gemini":
+        return gemini.generate(messages, system=SYSTEM_PROMPT, tools=TOOLS)
+    extra: dict = {}
+    if "haiku" not in s.model:  # mô hình nhỏ có thể không hỗ trợ fallback phía máy chủ
+        # Nếu bộ lọc an toàn từ chối nhầm, API tự chạy lại trên mô hình dự phòng phù hợp
+        extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
     return _client().beta.messages.create(
-        model=s.llm_model,
+        model=s.model,
         max_tokens=16000,
         system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
         tools=TOOLS,
         messages=messages,
         thinking={"type": "adaptive"},
         output_config={"effort": s.llm_effort},
-        # Nếu bộ lọc an toàn từ chối nhầm, API tự chạy lại trên mô hình dự phòng phù hợp
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
+        **extra,
     )
 
 
@@ -127,6 +132,8 @@ def chat(db: Session, user: User, conv: Conversation, text: str, input_mode: str
             messages.append({"role": "user", "content": results})
         else:
             reply_text = "Yêu cầu này hơi phức tạp, mình đã làm được một phần. Bạn kiểm tra lại giúp mình nhé."
+    except gemini.GeminiError as e:
+        raise AssistantError(str(e))
     except anthropic.AuthenticationError:
         raise AssistantError("Chưa cấu hình khoá API cho mô hình ngôn ngữ (ANTHROPIC_API_KEY).")
     except anthropic.RateLimitError:

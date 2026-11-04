@@ -133,8 +133,10 @@ Lưu ý: ở chế độ Testing, Google cho refresh token sống 7 ngày, hết
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `DATABASE_URL` | postgresql+psycopg://assistant:assistant@localhost:5432/assistant | Chuỗi kết nối CSDL |
+| `LLM_PROVIDER` | auto | `anthropic`, `gemini` hoặc `auto` (Gemini nếu chỉ có `GEMINI_API_KEY`) |
 | `ANTHROPIC_API_KEY` | | Khoá API Claude |
-| `LLM_MODEL` | claude-opus-5-5 | Mô hình dùng cho trợ lý |
+| `GEMINI_API_KEY` | | Khoá API Gemini (lấy ở aistudio.google.com, có gói miễn phí) |
+| `LLM_MODEL` | (theo nhà cung cấp) | Mặc định `gemini-2.5-flash` hoặc `claude-opus-5-5` |
 | `LLM_EFFORT` | low | Mức suy luận (low/medium/high); low cho phản hồi nhanh |
 | `JWT_SECRET` | | Khoá ký token, bắt buộc đổi khi triển khai |
 | `CORS_ORIGINS` | http://localhost:5173 | Các origin được gọi API |
