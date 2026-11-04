@@ -272,6 +272,10 @@ def test_daily_digest_runs_once_per_day(client, auth, google):
     _connect(client, auth)
     _inbox(google)
     vn = ZoneInfo("Asia/Ho_Chi_Minh")
+    assert client.get("/api/google/email-settings", headers=auth).json() == {"daily_enabled": False}
+    assert daily_email_digests(datetime(2026, 11, 4, 9, 0, tzinfo=vn)) == 0  # mặc định tắt: không đọc email
+    assert google.inbox and not any(m == "GET" and "messages" in u for m, u in google.calls)
+    client.put("/api/google/email-settings", json={"daily_enabled": True}, headers=auth)
     assert daily_email_digests(datetime(2026, 11, 4, 7, 30, tzinfo=vn)) == 0  # trước 8 giờ chưa chạy
     assert daily_email_digests(datetime(2026, 11, 4, 8, 5, tzinfo=vn)) == 1
     assert daily_email_digests(datetime(2026, 11, 4, 9, 0, tzinfo=vn)) == 0  # đã chạy hôm nay
@@ -327,6 +331,7 @@ def test_digest_reminder_contains_summary(client, auth, google, monkeypatch):
     _fake_ai(monkeypatch)
     _connect(client, auth)
     _inbox(google)
+    client.put("/api/google/email-settings", json={"daily_enabled": True}, headers=auth)
     daily_email_digests(datetime(2026, 11, 4, 8, 5, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh")))
     rems = client.get("/api/reminders", headers=auth).json()
     assert any("1 email quan trọng" in r["message"] and "duyệt đồ án thứ Năm" in r["message"] for r in rems)

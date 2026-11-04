@@ -134,3 +134,23 @@ def email_tasks(user: User = Depends(get_current_user), db: Session = Depends(ge
     from ..services import gmail
     created = gmail.make_tasks(db, user, _emails(db, user))
     return {"created": len(created), "titles": [t.title for t in created]}
+
+
+class EmailSettingsIn(BaseModel):
+    daily_enabled: bool
+
+
+@router.get("/email-settings")
+def get_email_settings(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from ..models import EmailSettings
+    opt = db.get(EmailSettings, user.id)
+    return {"daily_enabled": bool(opt and opt.daily_enabled)}
+
+
+@router.put("/email-settings")
+def set_email_settings(body: EmailSettingsIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Bật/tắt nhắc email hằng ngày 8 giờ sáng (khi bật, nội dung email quan trọng được gửi cho dịch vụ AI để tóm tắt)."""
+    from ..models import EmailSettings
+    db.merge(EmailSettings(user_id=user.id, daily_enabled=body.daily_enabled))
+    db.commit()
+    return {"daily_enabled": body.daily_enabled}

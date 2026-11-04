@@ -173,3 +173,12 @@ class EmailSummary(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     summary: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EmailSettings(Base):
+    """Tuỳ chọn email của người dùng. Mặc định TẮT nhắc hằng ngày để không tự gửi nội dung thư cho dịch vụ AI."""
+
+    __tablename__ = "email_settings"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    daily_enabled: Mapped[bool] = mapped_column(default=False)

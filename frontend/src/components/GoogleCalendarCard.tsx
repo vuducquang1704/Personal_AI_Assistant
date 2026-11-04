@@ -27,6 +27,13 @@ function EmailSection() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<[string, string] | null>(null);
   const [open, setOpen] = useState<string>("needs_reply");
+  const [daily, setDaily] = useState(false);
+  useEffect(() => { api<{ daily_enabled: boolean }>("/api/google/email-settings").then((r) => setDaily(r.daily_enabled)).catch(() => {}); }, []);
+  const toggleDaily = async (on: boolean) => {
+    if (on && !confirm("Bật nhắc hằng ngày? Mỗi sáng 8 giờ, nội dung (tối đa 3.000 ký tự) của các email quan trọng sẽ được gửi cho dịch vụ AI (Gemini hoặc Claude) để tóm tắt.")) return;
+    try { setDaily((await api<{ daily_enabled: boolean }>("/api/google/email-settings", { method: "PUT", body: { daily_enabled: on } })).daily_enabled); }
+    catch (e) { setNote(["error", (e as Error).message]); }
+  };
 
   const load = async (summarize = false) => {
     setBusy(true); setNote(null);
@@ -46,7 +53,11 @@ function EmailSection() {
   return (
     <div className="email-box">
       <h4>Email cần trả lời</h4>
-      <p className="muted small">Mỗi sáng 8 giờ, trợ lý đọc email chưa đọc trong 3 ngày gần đây, tóm tắt các email quan trọng, tạo việc cho email cần trả lời và nhắc bạn. Bạn cũng có thể hỏi trợ lý bằng giọng nói: “có email nào quan trọng không?”. Trợ lý chỉ đọc, không gửi hay xoá email.</p>
+      <label className="check">
+        <input type="checkbox" checked={daily} onChange={(e) => toggleDaily(e.target.checked)} />
+        Nhắc email quan trọng mỗi sáng 8 giờ (mặc định tắt)
+      </label>
+      <p className="muted small">Khi bật, mỗi sáng 8 giờ trợ lý đọc email chưa đọc trong 3 ngày gần đây, tóm tắt các email quan trọng, tạo việc cho email cần trả lời và nhắc bạn. Bạn cũng có thể hỏi trợ lý bằng giọng nói: “có email nào quan trọng không?”. Nội dung email quan trọng được gửi cho dịch vụ AI để tóm tắt. Trợ lý chỉ đọc, không gửi hay xoá email.</p>
       {note && <div className={note[0]}>{note[1]}</div>}
       {data && (
         <div className="email-groups">

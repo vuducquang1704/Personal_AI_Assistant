@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from ..config import get_settings
 from ..db import SessionLocal
-from ..models import EmailDigest, GoogleAccount, Reminder, Task, TaskStatus, User
+from ..models import EmailDigest, EmailSettings, GoogleAccount, Reminder, Task, TaskStatus, User
 from ..timeutil import local_tz, now_utc, to_local_str
 from . import gmail
 
@@ -60,6 +60,9 @@ def daily_email_digests(now=None) -> int:
     sent = 0
     with SessionLocal() as db:
         for acc in list(db.scalars(select(GoogleAccount).where(GoogleAccount.sync_enabled.is_(True)))):
+            opt = db.get(EmailSettings, acc.user_id)
+            if not opt or not opt.daily_enabled:  # người dùng phải bật nhắc email hằng ngày
+                continue
             done = db.get(EmailDigest, acc.user_id)
             if done and done.day == today:
                 continue
