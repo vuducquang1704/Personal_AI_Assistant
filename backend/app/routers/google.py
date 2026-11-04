@@ -117,12 +117,15 @@ def _emails(db: Session, user: User) -> list[dict]:
 
 
 @router.get("/emails")
-def emails(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Email chưa đọc 3 ngày gần đây, đã phân loại (cần trả lời / thông báo / quảng cáo / đọc sau)."""
+def emails(summarize: bool = False, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Email chưa đọc 3 ngày gần đây, đã phân loại; summarize=true thì AI tóm tắt các email quan trọng."""
     from ..services import gmail
     items = _emails(db, user)
+    if summarize:
+        gmail.enrich(db, user.id, items)
     counts = {k: sum(i["category"] == k for i in items) for k in gmail.LABELS}
-    return {"items": items, "counts": counts, "labels": gmail.LABELS}
+    return {"items": items, "counts": counts, "labels": gmail.LABELS,
+            "important": sum(i["important"] for i in items)}
 
 
 @router.post("/emails/tasks")

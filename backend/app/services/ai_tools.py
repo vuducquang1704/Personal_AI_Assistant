@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..models import PendingAction, Priority, Task, TaskStatus, User
 from ..timeutil import to_local_str
+from . import gmail
 from . import google_calendar as gc
 from . import task_service as ts
 
@@ -103,6 +104,14 @@ TOOLS: list[dict] = [
                 "task_id": _nullable("integer", description="Id công việc liên quan, hoặc null."),
             },
         },
+    },
+    {
+        "name": "check_emails",
+        "description": "Đọc hộp thư Gmail của người dùng: liệt kê email chưa đọc trong 3 ngày gần đây theo nhóm "
+                       "(cần trả lời, đọc sau, thông báo, quảng cáo) và tóm tắt các email quan trọng. "
+                       "Dùng khi người dùng hỏi về email, thư, hộp thư.",
+        "strict": True,
+        "input_schema": {"type": "object", "additionalProperties": False, "required": [], "properties": {}},
     },
     {
         "name": "get_statistics",
@@ -206,6 +215,17 @@ class ToolExecutor:
         self.actions.append({"type": "set_reminder", "reminder": data})
         cal = gc.calendar_state(self.db, self.user.id, reminder_id=r.id) if task_id is None else None
         return {"ok": True, "reminder": data, "calendar": cal}
+
+    def _t_check_emails(self):
+        try:
+            items = gmail.enrich(self.db, self.user.id, gmail.list_inbox(self.db, self.user.id))
+        except gc.GoogleError as e:
+            raise ToolError(str(e))
+        counts = {gmail.LABELS[k]: sum(i["category"] == k for i in items) for k in gmail.LABELS}
+        important = [{"subject": i["subject"], "from": i["from"], "category": gmail.LABELS[i["category"]],
+                      "summary": i["summary"] or i["snippet"]} for i in items if i["important"]]
+        self.actions.append({"type": "check_emails", "count": len(items), "important": len(important)})
+        return {"total_unread": len(items), "counts": counts, "important": important[:8]}
 
     def _t_get_statistics(self):
         s = ts.stats(self.db, self.user)

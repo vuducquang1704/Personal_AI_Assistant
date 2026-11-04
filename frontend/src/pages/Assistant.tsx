@@ -18,7 +18,7 @@ const SUGGESTIONS = [
 function ActionChips({ actions }: { actions: ChatMessage["actions"] }) {
   const label: Record<string, string> = {
     create_task: "Đã tạo việc", update_task: "Đã cập nhật", list_tasks: "Đã tra cứu",
-    delete_task_requested: "Yêu cầu xoá", set_reminder: "Đã đặt nhắc nhở", get_statistics: "Đã xem thống kê",
+    delete_task_requested: "Yêu cầu xoá", set_reminder: "Đã đặt nhắc nhở", get_statistics: "Đã xem thống kê", check_emails: "Đã kiểm tra email",
   };
   if (!actions?.length) return null;
   return (

@@ -17,8 +17,8 @@ const RESULT_TEXT: Record<string, [string, string]> = {
   error: ["error", "Kết nối Google không thành công, hãy thử lại."],
 };
 
-type Email = { id: string; from: string; subject: string; snippet: string; category: string };
-type EmailList = { items: Email[]; counts: Record<string, number>; labels: Record<string, string> };
+type Email = { id: string; from: string; subject: string; snippet: string; category: string; important: boolean; summary: string | null };
+type EmailList = { items: Email[]; counts: Record<string, number>; labels: Record<string, string>; important: number };
 const ORDER = ["needs_reply", "read_later", "notice", "promo"];
 
 /** Lọc email chưa đọc 3 ngày gần đây theo nhóm, và tạo việc "Trả lời ..." cho email cần phản hồi. */
@@ -28,9 +28,9 @@ function EmailSection() {
   const [note, setNote] = useState<[string, string] | null>(null);
   const [open, setOpen] = useState<string>("needs_reply");
 
-  const load = async () => {
+  const load = async (summarize = false) => {
     setBusy(true); setNote(null);
-    try { setData(await api<EmailList>("/api/google/emails")); }
+    try { setData(await api<EmailList>(`/api/google/emails${summarize ? "?summarize=true" : ""}`)); }
     catch (e) { setNote(["error", (e as Error).message]); }
     finally { setBusy(false); }
   };
@@ -46,7 +46,7 @@ function EmailSection() {
   return (
     <div className="email-box">
       <h4>Email cần trả lời</h4>
-      <p className="muted small">Mỗi sáng 8 giờ, trợ lý đọc email chưa đọc trong 3 ngày gần đây, tạo việc cho email cần trả lời và nhắc bạn. Trợ lý chỉ đọc, không gửi hay xoá email.</p>
+      <p className="muted small">Mỗi sáng 8 giờ, trợ lý đọc email chưa đọc trong 3 ngày gần đây, tóm tắt các email quan trọng, tạo việc cho email cần trả lời và nhắc bạn. Bạn cũng có thể hỏi trợ lý bằng giọng nói: “có email nào quan trọng không?”. Trợ lý chỉ đọc, không gửi hay xoá email.</p>
       {note && <div className={note[0]}>{note[1]}</div>}
       {data && (
         <div className="email-groups">
@@ -59,14 +59,19 @@ function EmailSection() {
           ))}
           <ul className="email-list">
             {data.items.filter((i) => i.category === open).map((i) => (
-              <li key={i.id}><b>{i.subject}</b><span className="muted small">{i.from}</span><span className="small">{i.snippet}</span></li>
+              <li key={i.id}>
+                <b>{i.important && <span className="badge-imp">Quan trọng</span>}{i.subject}</b>
+                <span className="muted small">{i.from}</span>
+                <span className="small">{i.summary ? `Tóm tắt: ${i.summary}` : i.snippet}</span>
+              </li>
             ))}
             {!data.items.some((i) => i.category === open) && <li className="muted small">Không có email nào.</li>}
           </ul>
         </div>
       )}
       <div className="row end">
-        <button type="button" disabled={busy} onClick={load}>{data ? "Tải lại" : "Kiểm tra email"}</button>
+        <button type="button" disabled={busy} onClick={() => load(false)}>{data ? "Tải lại" : "Kiểm tra email"}</button>
+        <button type="button" disabled={busy || !data || !data.important} onClick={() => load(true)} title="Dùng AI tóm tắt các email quan trọng">Tóm tắt email quan trọng{data ? ` (${data.important})` : ""}</button>
         <button type="button" className="primary" disabled={busy || !data || !data.counts.needs_reply} onClick={makeTasks}>Tạo việc trả lời</button>
       </div>
     </div>

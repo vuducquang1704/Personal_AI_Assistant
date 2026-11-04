@@ -134,9 +134,14 @@ Cùng kết nối Google, trợ lý đọc (chỉ đọc) email **chưa đọc t
 cần trả lời, đọc sau, thông báo (noreply, mạng xã hội) và quảng cáo. Phân loại dùng quy tắc nên không tốn lượt gọi AI:
 email có câu hỏi hoặc cụm đề nghị phản hồi ("vui lòng", "xác nhận", "please", "let me know"...) được xếp vào *cần trả lời*.
 
-- **Mỗi sáng 8 giờ** (giờ Việt Nam), với email cần trả lời, hệ thống tạo việc "Trả lời: tiêu đề" hạn 17:00 cùng ngày
-  (việc này cũng lên Google Calendar) và hiện một nhắc nhở "Sáng nay có N email cần trả lời". Mỗi email chỉ tạo việc một lần.
-- Trong **Cài đặt → Google Calendar và Gmail → Kiểm tra email** xem danh sách theo nhóm và bấm *Tạo việc trả lời* bất cứ lúc nào.
+- **Email quan trọng** = cần trả lời, hoặc Gmail đã đánh dấu quan trọng / gắn sao (trừ thư quảng cáo).
+  AI đọc thân thư và **tóm tắt 1-2 câu** (chỉ cho email quan trọng, tối đa 8 thư mỗi lần, tóm tắt được lưu lại nên mỗi thư chỉ tốn một lượt gọi AI).
+  Nội dung email được coi là dữ liệu, trợ lý không làm theo yêu cầu nằm trong thư (chống prompt injection).
+- **Mỗi sáng 8 giờ** (giờ Việt Nam), hệ thống tạo việc "Trả lời: tiêu đề" hạn 17:00 cùng ngày cho email cần trả lời
+  (việc này cũng lên Google Calendar) và hiện nhắc nhở "Sáng nay có N email quan trọng: ..." kèm tóm tắt, được đọc to bằng giọng nói.
+  Mỗi email chỉ tạo việc một lần.
+- **Hỏi bằng giọng nói**: "Có email nào quan trọng không?" -> trợ lý gọi công cụ `check_emails`, nói tổng số thư chưa đọc và đọc tóm tắt các thư quan trọng.
+- Trong **Cài đặt → Google Calendar và Gmail**: *Kiểm tra email* xem danh sách theo nhóm, *Tóm tắt email quan trọng* gọi AI, *Tạo việc trả lời* tạo việc bất cứ lúc nào.
 
 Cấu hình thêm trên Google Cloud: bật **Gmail API** (APIs & Services → Library), thêm quyền
 `https://www.googleapis.com/auth/gmail.readonly` ở **Data Access**, rồi ngắt kết nối và kết nối lại trong app,

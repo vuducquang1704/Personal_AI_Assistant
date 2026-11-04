@@ -65,12 +65,14 @@ def daily_email_digests(now=None) -> int:
                 continue
             try:
                 user = db.get(User, acc.user_id)
-                items = [i for i in gmail.list_inbox(db, user.id) if i["category"] == "needs_reply"]
-                gmail.make_tasks(db, user, items)
+                inbox = gmail.enrich(db, user.id, gmail.list_inbox(db, user.id))
+                gmail.make_tasks(db, user, inbox)
+                items = [i for i in inbox if i["important"]]
                 if items:
-                    names = "; ".join(i["subject"] for i in items[:3])
+                    lines = "; ".join(f"{i['subject']}" + (f" ({i['summary']})" if i.get("summary") else "")
+                                      for i in items[:3])
                     db.add(Reminder(user_id=user.id, remind_at=now,
-                                    message=f"Sáng nay có {len(items)} email cần trả lời: {names}"))
+                                    message=f"Sáng nay có {len(items)} email quan trọng: {lines}"[:490]))
                     sent += 1
             except Exception:  # một người lỗi (vd. chưa cấp quyền đọc email) không làm dừng những người khác
                 log.warning("Nhắc email hằng ngày lỗi cho user %s", acc.user_id, exc_info=True)

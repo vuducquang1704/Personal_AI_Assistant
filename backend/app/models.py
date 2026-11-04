@@ -162,3 +162,14 @@ class EmailDigest(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     day: Mapped[str] = mapped_column(String(10))
+
+
+class EmailSummary(Base):
+    """Bản tóm tắt AI của một email, lưu lại để không phải gọi AI lần nữa."""
+
+    __tablename__ = "email_summaries"
+
+    message_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    summary: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

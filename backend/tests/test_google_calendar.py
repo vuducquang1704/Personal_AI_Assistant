@@ -218,7 +218,11 @@ def test_calendar_state_reports_real_sync(client, auth, google):
 
 
 def _mail(sender, subject, snippet, labels=("INBOX", "UNREAD")):
-    return {"labelIds": list(labels), "snippet": snippet, "payload": {"headers": [
+    import base64
+    body = base64.urlsafe_b64encode(f"Nội dung đầy đủ: {snippet}".encode()).decode().rstrip("=")
+    return {"labelIds": list(labels), "snippet": snippet,
+            "payload": {"mimeType": "multipart/alternative", "parts": [
+                {"mimeType": "text/plain", "body": {"data": body}}], "headers": [
         {"name": "From", "value": sender}, {"name": "Subject", "value": subject},
         {"name": "Date", "value": "Wed, 4 Nov 2026 08:00:00 +0700"}]}}
 
@@ -272,6 +276,57 @@ def test_daily_digest_runs_once_per_day(client, auth, google):
     assert daily_email_digests(datetime(2026, 11, 4, 8, 5, tzinfo=vn)) == 1
     assert daily_email_digests(datetime(2026, 11, 4, 9, 0, tzinfo=vn)) == 0  # đã chạy hôm nay
     rems = client.get("/api/reminders", headers=auth).json()
-    assert any("1 email cần trả lời" in r["message"] for r in rems)
+    assert any("1 email quan trọng" in r["message"] for r in rems)
     titles = [t["title"] for t in client.get("/api/tasks", headers=auth).json()]
     assert titles.count("Trả lời: Lịch duyệt đồ án") == 1
+
+
+def _fake_ai(monkeypatch):
+    calls = []
+
+    def fake(system, prompt):
+        calls.append(prompt)
+        assert "Nội dung đầy đủ" in prompt  # đọc thân thư, không chỉ đoạn trích
+        return "Thầy hỏi lịch duyệt đồ án thứ Năm, cần xác nhận."
+    from app.services import assistant
+    monkeypatch.setattr(assistant, "complete_text", fake)
+    return calls
+
+
+def test_important_summaries_are_cached(client, auth, google, monkeypatch):
+    calls = _fake_ai(monkeypatch)
+    _connect(client, auth)
+    _inbox(google)
+    r = client.get("/api/google/emails", headers=auth).json()
+    assert r["important"] == 1 and all(i["summary"] is None for i in r["items"])  # chưa yêu cầu tóm tắt
+    r = client.get("/api/google/emails?summarize=true", headers=auth).json()
+    imp = [i for i in r["items"] if i["important"]]
+    assert len(imp) == 1 and imp[0]["summary"].startswith("Thầy hỏi")
+    client.get("/api/google/emails?summarize=true", headers=auth)
+    assert len(calls) == 1  # lần hai dùng bản đã lưu, không gọi AI nữa
+
+
+def test_assistant_tool_check_emails(client, auth, google, monkeypatch):
+    from app.db import SessionLocal
+    from app.models import User
+    from app.services import ai_tools
+    _fake_ai(monkeypatch)
+    _connect(client, auth)
+    _inbox(google)
+    with SessionLocal() as db:
+        out = json.loads(ai_tools.ToolExecutor(db, db.query(User).one()).run("check_emails", {}))
+    assert out["total_unread"] == 3 and out["counts"]["Cần trả lời"] == 1
+    assert out["important"][0]["summary"].startswith("Thầy hỏi")
+
+
+def test_digest_reminder_contains_summary(client, auth, google, monkeypatch):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from app.services.reminder_worker import daily_email_digests
+    _fake_ai(monkeypatch)
+    _connect(client, auth)
+    _inbox(google)
+    daily_email_digests(datetime(2026, 11, 4, 8, 5, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh")))
+    rems = client.get("/api/reminders", headers=auth).json()
+    assert any("1 email quan trọng" in r["message"] and "duyệt đồ án thứ Năm" in r["message"] for r in rems)

@@ -105,9 +105,10 @@ def generate(messages: list[dict], *, system: str, tools: list[dict]) -> SimpleN
     body = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": convert_messages(messages),
-        "tools": convert_tools(tools),
         "generationConfig": {"temperature": 0.3},
     }
+    if tools:
+        body["tools"] = convert_tools(tools)
     try:
         with httpx.Client(timeout=60, transport=transport) as http:
             r = http.post(f"{BASE}/{s.model}:generateContent", json=body, headers={"x-goog-api-key": s.gemini_api_key})
