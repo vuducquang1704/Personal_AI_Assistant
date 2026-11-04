@@ -8,6 +8,7 @@ import pytest
 
 from app.config import get_settings
 from app.services import google_calendar as gc
+from app.services.gmail import GMAIL, classify
 
 
 class FakeGoogle:
@@ -17,6 +18,8 @@ class FakeGoogle:
         self.next_id = 1
         self.refresh_ok = True
         self.revoked = False
+        self.inbox: dict[str, dict] = {}
+        self.gmail_forbidden = False
 
     def handler(self, req: httpx.Request) -> httpx.Response:
         url = str(req.url)
@@ -31,6 +34,13 @@ class FakeGoogle:
             return httpx.Response(200, json={"access_token": "at-2", "expires_in": 3600})
         if url == gc.USERINFO_URL:
             return httpx.Response(200, json={"email": "quang@gmail.com"})
+        if url.startswith(GMAIL):
+            if self.gmail_forbidden:
+                return httpx.Response(403, json={"error": {"message": "insufficient scopes"}})
+            path = req.url.path
+            if path.endswith("/messages"):
+                return httpx.Response(200, json={"messages": [{"id": k} for k in self.inbox]})
+            return httpx.Response(200, json=self.inbox[path.rsplit("/", 1)[-1]])
         if url == gc.REVOKE_URL:
             self.revoked = True
             return httpx.Response(200)
@@ -204,3 +214,64 @@ def test_calendar_state_reports_real_sync(client, auth, google):
         out = json.loads(ex.run("create_task", {"title": "Đọc sách", "description": None, "due_at": None, "priority": "none"}))
         assert out["calendar"] is None  # không có hạn thì không áp dụng
     assert len(google.events) == 1
+
+
+
+def _mail(sender, subject, snippet, labels=("INBOX", "UNREAD")):
+    return {"labelIds": list(labels), "snippet": snippet, "payload": {"headers": [
+        {"name": "From", "value": sender}, {"name": "Subject", "value": subject},
+        {"name": "Date", "value": "Wed, 4 Nov 2026 08:00:00 +0700"}]}}
+
+
+def test_classify_rules():
+    assert classify(["CATEGORY_PROMOTIONS"], "shop@x.com", "Giảm 50%?", "") == "promo"
+    assert classify([], "no-reply@bank.vn", "Thông báo giao dịch", "Bạn có giao dịch mới") == "notice"
+    assert classify([], "thay@hust.edu.vn", "Báo cáo đồ án", "Em gửi bản nháp trước thứ Sáu được không?") == "needs_reply"
+    assert classify([], "ban@gmail.com", "Ảnh chuyến đi", "Gửi cậu ảnh hôm qua") == "read_later"
+
+
+def _inbox(google):
+    google.inbox = {
+        "m1": _mail("Thầy Liêm <liem@hust.edu.vn>", "Lịch duyệt đồ án", "Em xác nhận giúp thầy lịch thứ Năm nhé?"),
+        "m2": _mail("Shopee <no-reply@shopee.vn>", "Đơn hàng đã giao", "Đơn hàng của bạn đã giao thành công"),
+        "m3": _mail("Sale <deal@shop.vn>", "Siêu sale 11.11", "Giảm giá", labels=("INBOX", "CATEGORY_PROMOTIONS")),
+    }
+
+
+def test_emails_endpoint_and_tasks(client, auth, google):
+    _connect(client, auth)
+    _inbox(google)
+    r = client.get("/api/google/emails", headers=auth).json()
+    assert r["counts"] == {"needs_reply": 1, "notice": 1, "promo": 1, "read_later": 0}
+    r = client.post("/api/google/emails/tasks", headers=auth).json()
+    assert r == {"created": 1, "titles": ["Trả lời: Lịch duyệt đồ án"]}
+    # chạy lại không tạo trùng
+    assert client.post("/api/google/emails/tasks", headers=auth).json()["created"] == 0
+    task = next(t for t in client.get("/api/tasks", headers=auth).json() if t["title"].startswith("Trả lời"))
+    assert task["due_at"] is not None
+    # việc có hạn nên cũng lên Google Calendar
+    assert any(e["summary"] == "Trả lời: Lịch duyệt đồ án" for e in google.events.values())
+
+
+def test_emails_without_gmail_permission(client, auth, google):
+    _connect(client, auth)
+    google.gmail_forbidden = True
+    r = client.get("/api/google/emails", headers=auth)
+    assert r.status_code == 400 and "quyền đọc email" in r.json()["detail"]
+
+
+def test_daily_digest_runs_once_per_day(client, auth, google):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from app.services.reminder_worker import daily_email_digests
+    _connect(client, auth)
+    _inbox(google)
+    vn = ZoneInfo("Asia/Ho_Chi_Minh")
+    assert daily_email_digests(datetime(2026, 11, 4, 7, 30, tzinfo=vn)) == 0  # trước 8 giờ chưa chạy
+    assert daily_email_digests(datetime(2026, 11, 4, 8, 5, tzinfo=vn)) == 1
+    assert daily_email_digests(datetime(2026, 11, 4, 9, 0, tzinfo=vn)) == 0  # đã chạy hôm nay
+    rems = client.get("/api/reminders", headers=auth).json()
+    assert any("1 email cần trả lời" in r["message"] for r in rems)
+    titles = [t["title"] for t in client.get("/api/tasks", headers=auth).json()]
+    assert titles.count("Trả lời: Lịch duyệt đồ án") == 1

@@ -142,3 +142,23 @@ class CalendarEvent(Base):
     reminder_id: Mapped[int | None] = mapped_column(ForeignKey("reminders.id", ondelete="SET NULL"), nullable=True, unique=True)
     event_id: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EmailTask(Base):
+    """Email đã được tạo thành công việc 'Trả lời ...', để không tạo trùng khi kiểm tra lại."""
+
+    __tablename__ = "email_tasks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    message_id: Mapped[str] = mapped_column(String(64), unique=True)
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
+
+
+class EmailDigest(Base):
+    """Ngày gần nhất đã gửi nhắc 'email cần trả lời' cho người dùng (YYYY-MM-DD, giờ Việt Nam)."""
+
+    __tablename__ = "email_digests"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    day: Mapped[str] = mapped_column(String(10))

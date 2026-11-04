@@ -29,6 +29,7 @@ SCOPES = " ".join([
     "openid",
     "https://www.googleapis.com/auth/userinfo.email",  # quyền xem email, hiển thị trên thẻ Google Calendar
     "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/gmail.readonly",  # đọc email để lọc và nhắc trả lời
 ])
 EVENT_MINUTES = 30
 PRIORITY_LABEL = {Priority.low: "thấp", Priority.medium: "trung bình", Priority.high: "cao"}
@@ -348,3 +349,13 @@ def calendar_state(db: Session, user_id: int, *, task_id: int | None = None,
     if acc.last_error:
         out["error"] = acc.last_error
     return out
+
+
+def call_google(db: Session, user_id: int, fn):
+    """Chạy fn(http, access_token) với token còn hiệu lực. Ném GoogleError nếu không làm được (dùng để đọc dữ liệu)."""
+    acc = get_account(db, user_id)
+    if not acc:
+        raise GoogleError("Chưa kết nối Google Calendar")
+    with _http() as http:
+        token = _access_token(db, acc, http)
+        return fn(http, token)

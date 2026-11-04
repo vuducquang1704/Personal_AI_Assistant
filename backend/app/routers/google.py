@@ -101,3 +101,33 @@ def sync(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 @router.delete("", status_code=204)
 def disconnect(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     gc.disconnect(db, user.id)
+
+
+# ---------------------------------------------------------------- Email
+
+def _emails(db: Session, user: User) -> list[dict]:
+    from ..services import gmail
+    _require_enabled()
+    try:
+        return gmail.list_inbox(db, user.id)
+    except gc.GoogleError as e:
+        raise HTTPException(400, str(e))
+    except Exception:
+        raise HTTPException(502, "Không kết nối được tới Gmail, bạn thử lại sau")
+
+
+@router.get("/emails")
+def emails(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Email chưa đọc 3 ngày gần đây, đã phân loại (cần trả lời / thông báo / quảng cáo / đọc sau)."""
+    from ..services import gmail
+    items = _emails(db, user)
+    counts = {k: sum(i["category"] == k for i in items) for k in gmail.LABELS}
+    return {"items": items, "counts": counts, "labels": gmail.LABELS}
+
+
+@router.post("/emails/tasks")
+def email_tasks(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Tạo việc 'Trả lời ...' (hạn 17:00 hôm nay) cho các email cần trả lời chưa có việc."""
+    from ..services import gmail
+    created = gmail.make_tasks(db, user, _emails(db, user))
+    return {"created": len(created), "titles": [t.title for t in created]}

@@ -17,6 +17,62 @@ const RESULT_TEXT: Record<string, [string, string]> = {
   error: ["error", "Kết nối Google không thành công, hãy thử lại."],
 };
 
+type Email = { id: string; from: string; subject: string; snippet: string; category: string };
+type EmailList = { items: Email[]; counts: Record<string, number>; labels: Record<string, string> };
+const ORDER = ["needs_reply", "read_later", "notice", "promo"];
+
+/** Lọc email chưa đọc 3 ngày gần đây theo nhóm, và tạo việc "Trả lời ..." cho email cần phản hồi. */
+function EmailSection() {
+  const [data, setData] = useState<EmailList | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<[string, string] | null>(null);
+  const [open, setOpen] = useState<string>("needs_reply");
+
+  const load = async () => {
+    setBusy(true); setNote(null);
+    try { setData(await api<EmailList>("/api/google/emails")); }
+    catch (e) { setNote(["error", (e as Error).message]); }
+    finally { setBusy(false); }
+  };
+  const makeTasks = async () => {
+    setBusy(true);
+    try {
+      const r = await api<{ created: number }>("/api/google/emails/tasks", { method: "POST" });
+      setNote(["ok", r.created ? `Đã tạo ${r.created} việc trả lời email, hạn 17:00 hôm nay.` : "Các email cần trả lời đều đã có việc."]);
+    } catch (e) { setNote(["error", (e as Error).message]); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="email-box">
+      <h4>Email cần trả lời</h4>
+      <p className="muted small">Mỗi sáng 8 giờ, trợ lý đọc email chưa đọc trong 3 ngày gần đây, tạo việc cho email cần trả lời và nhắc bạn. Trợ lý chỉ đọc, không gửi hay xoá email.</p>
+      {note && <div className={note[0]}>{note[1]}</div>}
+      {data && (
+        <div className="email-groups">
+          {ORDER.map((k) => (
+            <div key={k} className="email-group">
+              <button type="button" className={`email-tab ${open === k ? "active" : ""}`} onClick={() => setOpen(k)}>
+                {data.labels[k]} <b>{data.counts[k] ?? 0}</b>
+              </button>
+            </div>
+          ))}
+          <ul className="email-list">
+            {data.items.filter((i) => i.category === open).map((i) => (
+              <li key={i.id}><b>{i.subject}</b><span className="muted small">{i.from}</span><span className="small">{i.snippet}</span></li>
+            ))}
+            {!data.items.some((i) => i.category === open) && <li className="muted small">Không có email nào.</li>}
+          </ul>
+        </div>
+      )}
+      <div className="row end">
+        <button type="button" disabled={busy} onClick={load}>{data ? "Tải lại" : "Kiểm tra email"}</button>
+        <button type="button" className="primary" disabled={busy || !data || !data.counts.needs_reply} onClick={makeTasks}>Tạo việc trả lời</button>
+      </div>
+    </div>
+  );
+}
+
 /** Thẻ kết nối và cấu hình đồng bộ Google Calendar trong trang Cài đặt. */
 export default function GoogleCalendarCard() {
   const [params, setParams] = useSearchParams();
@@ -61,7 +117,7 @@ export default function GoogleCalendarCard() {
 
   return (
     <div className="card form">
-      <h3>Google Calendar</h3>
+      <h3>Google Calendar và Gmail</h3>
       <p className="muted small">
         Việc có hạn chót được tạo thành sự kiện trên lịch Google kèm thông báo nhắc trước hạn. Việc hoàn thành hoặc bị xoá sẽ tự gỡ khỏi lịch.
       </p>
@@ -92,6 +148,7 @@ export default function GoogleCalendarCard() {
             {st.last_error && <button type="button" disabled={busy} onClick={connect}>Kết nối lại</button>}
             <button type="button" className="primary" disabled={busy || !st.sync_enabled} onClick={syncNow}>Đồng bộ ngay</button>
           </div>
+          <EmailSection />
         </>
       )}
     </div>
