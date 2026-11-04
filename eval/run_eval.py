@@ -142,7 +142,7 @@ def main():
     field_checks = [(k, v) for r in results for k, v in r["checks"].items() if k != "intent"]
     lat = [r["latency_s"] for r in results]
     summary = {
-        "model": assistant.get_settings().llm_model,
+        "model": assistant.get_settings().model,
         "effort": assistant.get_settings().llm_effort,
         "cases": n,
         "case_pass_rate": round(sum(r["passed"] for r in results) / n, 3),
