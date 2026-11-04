@@ -4,6 +4,7 @@ Mọi thao tác đồng bộ đều "best-effort": nếu Google lỗi hoặc m�
 `last_error`, không làm hỏng thao tác chính (tạo/sửa/xoá công việc) của người dùng.
 """
 import logging
+import secrets
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
@@ -51,22 +52,30 @@ def _http() -> httpx.Client:
 
 # ---------------------------------------------------------------- OAuth
 
-def make_state(user_id: int) -> str:
-    payload = {"sub": str(user_id), "purpose": "google-oauth", "exp": now_utc() + timedelta(minutes=10)}
+def make_state(user_id: int, nonce: str) -> str:
+    # "uid" thay vì "sub" và có "purpose" để không thể dùng làm token đăng nhập
+    payload = {"uid": user_id, "nonce": nonce, "purpose": "google-oauth", "exp": now_utc() + timedelta(minutes=10)}
     return jwt.encode(payload, get_settings().jwt_secret, algorithm="HS256")
 
 
-def read_state(state: str) -> int:
+def new_nonce() -> str:
+    return secrets.token_urlsafe(24)
+
+
+def read_state(state: str, nonce: str | None) -> int:
+    """Kiểm tra state và so nonce với cookie của trình duyệt đã bắt đầu kết nối (chống CSRF)."""
     try:
         payload = jwt.decode(state, get_settings().jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError as e:
         raise GoogleError("Phiên kết nối Google không hợp lệ hoặc đã hết hạn") from e
     if payload.get("purpose") != "google-oauth":
         raise GoogleError("Phiên kết nối Google không hợp lệ")
-    return int(payload["sub"])
+    if not nonce or not secrets.compare_digest(str(payload.get("nonce", "")), nonce):
+        raise GoogleError("Yêu cầu kết nối Google không xuất phát từ trình duyệt này")
+    return int(payload["uid"])
 
 
-def auth_url(user: User) -> str:
+def auth_url(user: User, nonce: str) -> str:
     s = get_settings()
     params = {
         "client_id": s.google_client_id,
@@ -76,7 +85,7 @@ def auth_url(user: User) -> str:
         "access_type": "offline",  # để nhận refresh token
         "prompt": "consent",
         "include_granted_scopes": "true",
-        "state": make_state(user.id),
+        "state": make_state(user.id, nonce),
     }
     return f"{AUTH_URL}?{urlencode(params)}"
 

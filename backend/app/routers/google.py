@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from ..models import User
 from ..security import get_current_user
 from ..services import google_calendar as gc
 
+COOKIE = "google_oauth_nonce"
 router = APIRouter(prefix="/api/google", tags=["google"])
 
 
@@ -45,27 +46,33 @@ def status(user: User = Depends(get_current_user), db: Session = Depends(get_db)
 
 
 @router.get("/auth-url")
-def get_auth_url(user: User = Depends(get_current_user)):
+def get_auth_url(response: Response, user: User = Depends(get_current_user)):
     _require_enabled()
-    return {"url": gc.auth_url(user)}
+    nonce = gc.new_nonce()
+    # Cookie gắn state với trình duyệt đã bấm "Kết nối"; Lax vẫn được gửi khi Google chuyển hướng về
+    response.set_cookie(COOKIE, nonce, max_age=600, httponly=True, samesite="lax",
+                        secure=get_settings().frontend_url.startswith("https://"), path="/api/google")
+    return {"url": gc.auth_url(user, nonce)}
 
 
 @router.get("/callback", include_in_schema=False)
 def callback(code: str | None = None, state: str | None = None, error: str | None = None,
-             db: Session = Depends(get_db)):
+             google_oauth_nonce: str | None = Cookie(default=None), db: Session = Depends(get_db)):
     """Google chuyển hướng trình duyệt về đây sau khi người dùng đồng ý."""
     front = get_settings().frontend_url.rstrip("/")
     if error or not code or not state:
         return RedirectResponse(f"{front}/settings?google=denied")
     try:
-        user_id = gc.read_state(state)
+        user_id = gc.read_state(state, google_oauth_nonce)
         if not db.get(User, user_id):
             raise gc.GoogleError("Người dùng không tồn tại")
         gc.connect(db, user_id, code)
         gc.sync_all(db, db.get(User, user_id))
     except gc.GoogleError:
         return RedirectResponse(f"{front}/settings?google=error")
-    return RedirectResponse(f"{front}/settings?google=connected")
+    resp = RedirectResponse(f"{front}/settings?google=connected")
+    resp.delete_cookie(COOKIE, path="/api/google")
+    return resp
 
 
 @router.patch("", response_model=GoogleStatus)

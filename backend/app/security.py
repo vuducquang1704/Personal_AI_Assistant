@@ -39,6 +39,8 @@ def get_current_user(
         raise unauthorized
     try:
         payload = jwt.decode(creds.credentials, get_settings().jwt_secret, algorithms=["HS256"])
+        if payload.get("purpose"):  # token cho mục đích khác (vd. state OAuth) không phải token đăng nhập
+            raise KeyError("purpose")
         user = db.get(User, int(payload["sub"]))
     except (jwt.PyJWTError, KeyError, ValueError):
         raise unauthorized

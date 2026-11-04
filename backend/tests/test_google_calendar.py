@@ -66,7 +66,7 @@ def _connect(client, auth):
     q = parse_qs(urlparse(url).query)
     assert q["access_type"] == ["offline"] and "calendar.events" in q["scope"][0]
     r = client.get("/api/google/callback", params={"code": "good-code", "state": q["state"][0]},
-                   follow_redirects=False)
+                   follow_redirects=False)  # TestClient giữ cookie nonce như trình duyệt
     assert r.status_code == 307 and r.headers["location"].endswith("/settings?google=connected")
 
 
@@ -171,3 +171,19 @@ def test_token_encrypted_at_rest(client, auth, google):
         acc = db.query(GoogleAccount).one()
         assert "rt-1" not in acc.refresh_token_enc
         assert gc.decrypt(acc.refresh_token_enc) == "rt-1"
+
+
+def test_state_cannot_be_used_as_login_token(client, auth, google):
+    url = client.get("/api/google/auth-url", headers=auth).json()["url"]
+    state = parse_qs(urlparse(url).query)["state"][0]
+    r = client.get("/api/auth/me", headers={"Authorization": f"Bearer {state}"})
+    assert r.status_code == 401
+
+
+def test_callback_requires_same_browser(client, auth, google):
+    url = client.get("/api/google/auth-url", headers=auth).json()["url"]
+    state = parse_qs(urlparse(url).query)["state"][0]
+    client.cookies.clear()  # trình duyệt khác (nạn nhân bấm liên kết của kẻ tấn công)
+    r = client.get("/api/google/callback", params={"code": "good-code", "state": state}, follow_redirects=False)
+    assert r.headers["location"].endswith("google=error")
+    assert client.get("/api/google/status", headers=auth).json()["connected"] is False
